@@ -26,7 +26,7 @@ public class Checker {
 	/**
 	 * In HTML this commonly identifies a Link
 	 */
-	private static final String PATTERN = "<a href=\"";
+	private static final String PATTERN = "<a href=\"http://";
 	/**
 	 * In HTML this identifies a link iff it is preceded by {@link Pattern}
 	 */
@@ -109,7 +109,9 @@ public class Checker {
 				// Chop off the first part of the the string up to and
 				// including PATTERN
 				final String substring = lowerCase.substring(idx
-						+ PATTERN.length());
+						+ PATTERN.length() - 7); // FIXME hacked length to
+													// account for http:// in
+													// pattern
 				// Try finding the end of the URL in the substring
 				final int endIdx = substring.indexOf(PATTERN_END);
 				if (endIdx > -1) {
