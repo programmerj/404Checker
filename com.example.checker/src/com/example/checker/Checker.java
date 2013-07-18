@@ -9,9 +9,8 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
@@ -62,7 +61,9 @@ public class Checker {
 				url.toString()));
 
 		// links is used to store all extracted urls from the web page
-		final List<String> links = new ArrayList<String>();
+		// A TreeSet implements SortedSet and thus it automagically sorts the
+		// elements inserted.
+		final Set<String> links = new TreeSet<String>();
 
 		// Open a connection to the (remote) web server and "read" the page line
 		// by line. In case the web server does not respond (unavailable) or the
@@ -96,11 +97,6 @@ public class Checker {
 				}
 			}
 
-			// links has been instantiated with length 100, but it might
-			// contains less elements. Arrays.sort does not tolerate null
-			// elements, thus we copy the subset from links into copyof to
-			// remove null elements.
-			Collections.sort(links);
 			// Loop over the (now sorted) list of urls and print them to stdout
 			for (String string2 : links) {
 				System.out.println(string2);
