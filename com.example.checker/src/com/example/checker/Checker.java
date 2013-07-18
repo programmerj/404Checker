@@ -9,7 +9,9 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
 /**
@@ -60,9 +62,7 @@ public class Checker {
 				url.toString()));
 
 		// links is used to store all extracted urls from the web page
-		// TODO 100 elements might not be enough in some cases
-		final String[] links = new String[100];
-		int i = 0;
+		final List<String> links = new ArrayList<String>();
 
 		// Open a connection to the (remote) web server and "read" the page line
 		// by line. In case the web server does not respond (unavailable) or the
@@ -91,7 +91,7 @@ public class Checker {
 						// cut out the substring that _is_ the url
 						final String link = substring.substring(0, endIdx)
 								.trim();
-						links[i++] = link;
+						links.add(link);
 					}
 				}
 			}
@@ -100,11 +100,9 @@ public class Checker {
 			// contains less elements. Arrays.sort does not tolerate null
 			// elements, thus we copy the subset from links into copyof to
 			// remove null elements.
-			final String[] copy = Arrays.copyOf(links, i);
-			Arrays.sort(copy);
+			Collections.sort(links);
 			// Loop over the (now sorted) list of urls and print them to stdout
-			for (int j = 0; j < copy.length; j++) {
-				String string2 = copy[j];
+			for (String string2 : links) {
 				System.out.println(string2);
 			}
 
