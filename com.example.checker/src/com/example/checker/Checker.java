@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
@@ -58,6 +59,11 @@ public class Checker {
 		System.out.println(String.format("Going to start checker on url: %s",
 				url.toString()));
 
+		// links is used to store all extracted urls from the web page
+		// TODO 100 elements might not be enough in some cases
+		final String[] links = new String[100];
+		int i = 0;
+
 		// Open a connection to the (remote) web server and "read" the page line
 		// by line. In case the web server does not respond (unavailable) or the
 		// URL is only syntactically correct but invalid, the program (again)
@@ -85,10 +91,23 @@ public class Checker {
 						// cut out the substring that _is_ the url
 						final String link = substring.substring(0, endIdx)
 								.trim();
-						System.out.println(link);
+						links[i++] = link;
 					}
 				}
 			}
+
+			// links has been instantiated with length 100, but it might
+			// contains less elements. Arrays.sort does not tolerate null
+			// elements, thus we copy the subset from links into copyof to
+			// remove null elements.
+			final String[] copy = Arrays.copyOf(links, i);
+			Arrays.sort(copy);
+			// Loop over the (now sorted) list of urls and print them to stdout
+			for (int j = 0; j < copy.length; j++) {
+				String string2 = copy[j];
+				System.out.println(string2);
+			}
+
 		} catch (UnknownHostException e) {
 			System.err.println(String.format(
 					"The given url %s points to an unknown host", url));
