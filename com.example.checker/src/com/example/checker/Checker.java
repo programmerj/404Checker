@@ -3,8 +3,13 @@
  */
 package com.example.checker;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.util.regex.Pattern;
 
 /**
  * @author markus
@@ -15,6 +20,15 @@ import java.net.URL;
  * 
  */
 public class Checker {
+
+	/**
+	 * In HTML this commonly identifies a Link
+	 */
+	private static final String PATTERN = "<a href=\"";
+	/**
+	 * In HTML this identifies a link iff it is preceeded by {@link Pattern}
+	 */
+	private static final String PATTERN_END = "\"";
 
 	/**
 	 * @param args
@@ -43,5 +57,45 @@ public class Checker {
 
 		System.out.println(String.format("Going to start checker on url: %s",
 				url.toString()));
+
+		// Open a connection to the (remote) web server and "read" the page line
+		// by line. In case the web server does not respond (unavailable) or the
+		// URL is only syntactically correct but invalid, the program (again)
+		// just terminates.
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					url.openStream()));
+			String line = "";
+			while ((line = reader.readLine()) != null) {
+				// Process each line to extract a URL out if:
+				// a) "<a href="http://...>" identifies a URL
+				// TODO What about line breaks?
+				final String lowerCase = line.toLowerCase();
+				final int idx = lowerCase.indexOf(PATTERN);
+				if (idx > -1) {
+					// Found a line that contains a string containing PATTERN
+
+					// Chop off the first part of the the string up to and
+					// including PATTERN
+					final String substring = lowerCase.substring(idx
+							+ PATTERN.length());
+					// Try finding the end of the URL in the substring
+					final int endIdx = substring.indexOf(PATTERN_END);
+					if (endIdx > -1) {
+						// cut out the substring that _is_ the url
+						final String link = substring.substring(0, endIdx)
+								.trim();
+						System.out.println(link);
+					}
+				}
+			}
+		} catch (UnknownHostException e) {
+			System.err.println(String.format(
+					"The given url %s points to an unknown host", url));
+			System.exit(1);
+		} catch (IOException e) {
+			System.err.println(String.format("Failed to connect to %s", url));
+			System.exit(1);
+		}
 	}
 }
