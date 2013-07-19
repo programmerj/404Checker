@@ -7,10 +7,14 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import com.example.checker.extract.HTMLExtractor;
+import com.example.checker.extract.IExtractor;
+import com.example.checker.extract.XMLExtractor;
 
 /**
  * @author markus
@@ -29,6 +33,18 @@ public class Checker {
 	 */
 	public static void main(String[] args) {
 		new Checker().check(args[0]);
+	}
+
+	private final Map<String, IExtractor> extractors;
+
+	public Checker() {
+		extractors = new HashMap<String, IExtractor>();
+
+		// Add built-in extractors
+		IExtractor extractor = new HTMLExtractor();
+		extractors.put(extractor.getContentType(), extractor);
+		extractor = new XMLExtractor();
+		extractors.put(extractor.getContentType(), extractor);
 	}
 
 	/**
@@ -60,13 +76,9 @@ public class Checker {
 			// line based pattern matching looking for hrefs, whereas an xml
 			// file could navigate the xml structure to extract links
 			final String contentType = url.openConnection().getContentType();
-			if (contentType == null) {
-				// TODO Handle case that
-			} else if (contentType.startsWith("text/html")) {
-				HTMLExtractor.extractLinks(url, links);
-			} else if (contentType.startsWith("text/xml")) {
-				// TODO Implement extractor for xml
-				throw new UnsupportedOperationException("not yet implemented");
+			if (extractors.containsKey(contentType)) {
+				IExtractor iExtractor = extractors.get(contentType);
+				iExtractor.extractLinks(url, links);
 			} else {
 				System.out.println(String.format(
 						"No handle for %s content type", contentType));

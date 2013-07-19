@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * @author markus
  * 
  */
-public class HTMLExtractor {
+public class HTMLExtractor implements IExtractor {
 
 	private static final Logger LOGGER = Logger.getLogger(HTMLExtractor.class
 			.getName());
@@ -29,17 +29,13 @@ public class HTMLExtractor {
 	 */
 	private static final String PATTERN_END = "\"";
 
-	/**
-	 * @param url
-	 *            The address of the (remote|local) web page to connect to
-	 * @param links
-	 *            All links embedded in the output of the content
-	 * @throws IOException
-	 *             In case the web server does not respond (unavailable) or the
-	 *             URL is only syntactically correct but invalid, the program
-	 *             (again) just terminates.
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.example.checker.extract.IExtractor#extractLinks(java.net.URL,
+	 * java.util.Set)
 	 */
-	public static void extractLinks(final URL url, final Set<String> links)
+	public void extractLinks(final URL url, final Set<String> links)
 			throws IOException {
 		int i = 0;
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -74,4 +70,13 @@ public class HTMLExtractor {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.example.checker.extract.IExtractor#getContentType()
+	 */
+	@Override
+	public String getContentType() {
+		return "text/html; charset=UTF-8";
+	}
 }
