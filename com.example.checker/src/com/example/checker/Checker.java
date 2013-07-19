@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -22,6 +23,9 @@ import java.util.regex.Pattern;
  * 
  */
 public class Checker {
+
+	private static final Logger LOGGER = Logger.getLogger(Checker.class
+			.getName());
 
 	/**
 	 * In HTML this commonly identifies a Link
@@ -94,6 +98,7 @@ public class Checker {
 	 */
 	private void extractLinks(final URL url, final Set<String> links)
 			throws IOException {
+		int i = 0;
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
 				url.openStream()));
 		String line = "";
@@ -118,6 +123,9 @@ public class Checker {
 					// cut out the substring that _is_ the url
 					final String link = substring.substring(0, endIdx).trim();
 					links.add(link);
+					LOGGER.fine(String.format(
+							"Processed %d th element %s and added to set", i++,
+							link));
 				}
 			}
 		}
