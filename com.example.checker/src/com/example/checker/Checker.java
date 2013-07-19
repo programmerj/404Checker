@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -36,6 +38,7 @@ public class Checker {
 	}
 
 	private final Map<String, IExtractor> extractors;
+	private final Comparator<? super URL> urlComparator;
 
 	public Checker() {
 		extractors = new HashMap<String, IExtractor>();
@@ -45,6 +48,14 @@ public class Checker {
 		extractors.put(extractor.getContentType(), extractor);
 		extractor = new XMLExtractor();
 		extractors.put(extractor.getContentType(), extractor);
+
+		this.urlComparator = new Comparator<URL>() {
+
+			@Override
+			public int compare(URL o1, URL o2) {
+				return o1.toString().compareTo(o2.toString());
+			}
+		};
 	}
 
 	/**
@@ -66,35 +77,55 @@ public class Checker {
 		System.out.println(String.format("Going to start checker on url: %s",
 				url.toString()));
 
-		// links is used to store all extracted urls from the web page
-		// A TreeSet implements SortedSet and thus it automagically sorts the
-		// elements inserted.
-		final Set<String> links = new TreeSet<String>();
-
-		try {
-			// Each content type needs a specific Extractor. E.g. html uses a
-			// line based pattern matching looking for hrefs, whereas an xml
-			// file could navigate the xml structure to extract links
-			final String contentType = url.openConnection().getContentType();
-			if (extractors.containsKey(contentType)) {
-				IExtractor iExtractor = extractors.get(contentType);
-				iExtractor.extractLinks(url, links);
-			} else {
-				System.out.println(String.format(
-						"No handle for %s content type", contentType));
-			}
-		} catch (UnknownHostException e) {
-			System.err.println(String.format(
-					"The given url %s points to an unknown host", url));
-			System.exit(1);
-		} catch (IOException e) {
-			System.err.println(String.format("Failed to connect to %s", url));
-			System.exit(1);
-		}
+		final Set<URL> urls = new HashSet<URL>();
+		urls.add(url);
+		Set<URL> dead = check(urls);
 
 		// Loop over the (now sorted) list of urls and print them to stdout
-		for (String string2 : links) {
+		for (URL string2 : dead) {
 			System.out.println(string2);
+		}
+	}
+
+	private Set<URL> check(final Set<URL> urls) {
+		final Set<URL> dead = new HashSet<URL>();
+		check(urls, dead);
+		return dead;
+	}
+
+	private void check(final Set<URL> urls, Set<URL> dead) {
+		for (URL url : urls) {
+			// links is used to store all extracted urls from the web page
+			// A TreeSet implements SortedSet and thus it automagically sorts
+			// the
+			// elements inserted.
+			final Set<URL> links = new TreeSet<URL>(urlComparator);
+
+			try {
+				// Each content type needs a specific Extractor. E.g. html uses
+				// a
+				// line based pattern matching looking for hrefs, whereas an xml
+				// file could navigate the xml structure to extract links
+				final String contentType = url.openConnection()
+						.getContentType();
+				if (contentType == null) {
+					// 404
+					dead.add(url);
+				} else if (extractors.containsKey(contentType)) {
+					IExtractor iExtractor = extractors.get(contentType);
+					iExtractor.extractLinks(url, links);
+				} else {
+					System.out.println(String.format(
+							"No handle for %s content type", contentType));
+				}
+			} catch (UnknownHostException e) {
+				// 404
+				dead.add(url);
+			} catch (IOException e) {
+				System.err.println(String
+						.format("Failed to connect to %s", url));
+				System.exit(1);
+			}
 		}
 	}
 }

@@ -20,7 +20,7 @@ public class XMLExtractor implements IExtractor {
 	 * java.util.Set)
 	 */
 	@Override
-	public void extractLinks(URL url, Set<String> links) throws IOException {
+	public void extractLinks(URL url, Set<URL> links) throws IOException {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("not yet implemented");
 	}

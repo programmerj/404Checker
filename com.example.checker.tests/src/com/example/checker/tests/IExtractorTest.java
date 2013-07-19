@@ -44,7 +44,7 @@ public class IExtractorTest {
 	private final IExtractor extractor;
 	private final int expectedAmountOfLinks;
 	private URL url;
-	private Set<String> links;
+	private Set<URL> links;
 
 	public IExtractorTest(IExtractor extractor, String url,
 			Integer expectedAmountOfLinks) {
@@ -61,7 +61,7 @@ public class IExtractorTest {
 
 	@Before
 	public void setup() throws IOException {
-		links = new HashSet<String>();
+		links = new HashSet<URL>();
 		extractor.extractLinks(url, links);
 	}
 
@@ -69,18 +69,6 @@ public class IExtractorTest {
 	public void testExtractLinksFromKnownURL() throws IOException {
 		assertTrue("Missed to see some links",
 				links.size() == expectedAmountOfLinks);
-	}
-
-	@Test
-	public void testExtractLinksConvertToURL() throws IOException {
-		for (String string : links) {
-			try {
-				assertTrue("Links are expected to be convertible to URL",
-						new URL(string).toString().equals(string));
-			} catch (MalformedURLException e) {
-				fail(e.getMessage());
-			}
-		}
 	}
 
 	@Test

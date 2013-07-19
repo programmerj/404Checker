@@ -35,7 +35,7 @@ public class HTMLExtractor implements IExtractor {
 	 * @see com.example.checker.extract.IExtractor#extractLinks(java.net.URL,
 	 * java.util.Set)
 	 */
-	public void extractLinks(final URL url, final Set<String> links)
+	public void extractLinks(final URL url, final Set<URL> links)
 			throws IOException {
 		int i = 0;
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
@@ -61,7 +61,7 @@ public class HTMLExtractor implements IExtractor {
 				if (endIdx > -1) {
 					// cut out the substring that _is_ the url
 					final String link = substring.substring(0, endIdx).trim();
-					links.add(link);
+					links.add(new URL(link));
 					LOGGER.fine(String.format(
 							"Processed %d th element %s and added to set", i++,
 							link));

@@ -22,7 +22,7 @@ public interface IExtractor {
 	 *             URL is only syntactically correct but invalid, the program
 	 *             (again) just terminates.
 	 */
-	void extractLinks(final URL url, final Set<String> links)
+	void extractLinks(final URL url, final Set<URL> links)
 			throws IOException;
 
 	/**
