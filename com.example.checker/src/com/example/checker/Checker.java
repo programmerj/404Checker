@@ -3,16 +3,14 @@
  */
 package com.example.checker;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
+
+import com.example.checker.extract.HTMLExtractor;
 
 /**
  * @author markus
@@ -23,18 +21,6 @@ import java.util.regex.Pattern;
  * 
  */
 public class Checker {
-
-	private static final Logger LOGGER = Logger.getLogger(Checker.class
-			.getName());
-
-	/**
-	 * In HTML this commonly identifies a Link
-	 */
-	private static final String PATTERN = "<a href=\"http://";
-	/**
-	 * In HTML this identifies a link iff it is preceded by {@link Pattern}
-	 */
-	private static final String PATTERN_END = "\"";
 
 	/**
 	 * @param args
@@ -70,7 +56,21 @@ public class Checker {
 		final Set<String> links = new TreeSet<String>();
 
 		try {
-			extractLinks(url, links);
+			// Each content type needs a specific Extractor. E.g. html uses a
+			// line based pattern matching looking for hrefs, whereas an xml
+			// file could navigate the xml structure to extract links
+			final String contentType = url.openConnection().getContentType();
+			if (contentType == null) {
+				// TODO Handle case that
+			} else if (contentType.startsWith("text/html")) {
+				HTMLExtractor.extractLinks(url, links);
+			} else if (contentType.startsWith("text/xml")) {
+				// TODO Implement extractor for xml
+				throw new UnsupportedOperationException("not yet implemented");
+			} else {
+				System.out.println(String.format(
+						"No handle for %s content type", contentType));
+			}
 		} catch (UnknownHostException e) {
 			System.err.println(String.format(
 					"The given url %s points to an unknown host", url));
@@ -83,51 +83,6 @@ public class Checker {
 		// Loop over the (now sorted) list of urls and print them to stdout
 		for (String string2 : links) {
 			System.out.println(string2);
-		}
-	}
-
-	/**
-	 * @param url
-	 *            The address of the (remote|local) web page to connect to
-	 * @param links
-	 *            All links embedded in the output of the content
-	 * @throws IOException
-	 *             In case the web server does not respond (unavailable) or the
-	 *             URL is only syntactically correct but invalid, the program
-	 *             (again) just terminates.
-	 */
-	private void extractLinks(final URL url, final Set<String> links)
-			throws IOException {
-		int i = 0;
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				url.openStream()));
-		String line = "";
-		while ((line = reader.readLine()) != null) {
-			// Process each line to extract a URL out if:
-			// a) "<a href="http://...>" identifies a URL
-			// TODO What about line breaks?
-			final String lowerCase = line.toLowerCase();
-			final int idx = lowerCase.indexOf(PATTERN);
-			if (idx > -1) {
-				// Found a line that contains a string containing PATTERN
-
-				// Chop off the first part of the the string up to and
-				// including PATTERN
-				final String substring = lowerCase.substring(idx
-						+ PATTERN.length() - 7); // FIXME hacked length to
-													// account for http:// in
-													// pattern
-				// Try finding the end of the URL in the substring
-				final int endIdx = substring.indexOf(PATTERN_END);
-				if (endIdx > -1) {
-					// cut out the substring that _is_ the url
-					final String link = substring.substring(0, endIdx).trim();
-					links.add(link);
-					LOGGER.fine(String.format(
-							"Processed %d th element %s and added to set", i++,
-							link));
-				}
-			}
 		}
 	}
 }
