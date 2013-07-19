@@ -10,4 +10,5 @@
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.example.checker.Checker"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="http://www.lemmster.de/blog/"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="com.example.checker"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Djava.util.logging.config.file=${project_loc:com.example.checker}/logging.properties"/>
 </launchConfiguration>
