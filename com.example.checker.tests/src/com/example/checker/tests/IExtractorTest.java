@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -80,5 +81,13 @@ public class IExtractorTest {
 				fail(e.getMessage());
 			}
 		}
+	}
+
+	@Test
+	@Ignore
+	public void testGetContentType() {
+		// TODO Implement a test that checks IExtractor to always return a
+		// non-null value
+		fail("Not yet implemented");
 	}
 }
