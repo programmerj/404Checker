@@ -29,6 +29,8 @@ import com.example.checker.extract.XMLExtractor;
  */
 public class Checker {
 
+	private static final int THRESHOLD = 2;
+
 	/**
 	 * @param args
 	 *            The first element of the string parameters is passed on and
@@ -94,11 +96,14 @@ public class Checker {
 
 	private Set<URL> check(final Set<URL> urls) {
 		final Set<URL> dead = new HashSet<URL>();
-		check(urls, dead);
+		check(urls, dead, 0);
 		return dead;
 	}
 
-	private void check(final Set<URL> urls, Set<URL> dead) {
+	private void check(final Set<URL> urls, Set<URL> dead, int level) {
+		if (level++ > THRESHOLD) {
+			return;
+		}
 		for (URL url : urls) {
 			// links is used to store all extracted urls from the web page
 			// A TreeSet implements SortedSet and thus it automagically sorts
@@ -129,8 +134,13 @@ public class Checker {
 			} catch (IOException e) {
 				System.err.println(String
 						.format("Failed to connect to %s", url));
+				// FIXME exiting the the VM in case of an error does not make
+				// much sense with recursion anymore!
 				System.exit(1);
 			}
+
+			// recurse into
+			check(links, dead, level);
 		}
 	}
 }
