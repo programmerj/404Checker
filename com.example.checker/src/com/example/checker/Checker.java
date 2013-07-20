@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.example.checker.extract.HTMLExtractor;
+import com.example.checker.extract.HTMLRegexExtractor;
 import com.example.checker.extract.IExtractor;
 import com.example.checker.extract.XMLExtractor;
 
@@ -44,7 +44,7 @@ public class Checker {
 		extractors = new HashMap<String, IExtractor>();
 
 		// Add built-in extractors
-		IExtractor extractor = new HTMLExtractor();
+		IExtractor extractor = new HTMLRegexExtractor();
 		extractors.put(extractor.getContentType(), extractor);
 		extractor = new XMLExtractor();
 		extractors.put(extractor.getContentType(), extractor);
@@ -82,9 +82,11 @@ public class Checker {
 		Set<URL> dead = check(urls);
 
 		// Loop over the (now sorted) list of urls and print them to stdout
+		System.out.println("==== Dead links ====");
 		for (URL string2 : dead) {
 			System.out.println(string2);
 		}
+		System.out.println("==== Done ====");
 	}
 
 	private Set<URL> check(final Set<URL> urls) {
