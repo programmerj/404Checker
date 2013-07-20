@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import com.example.checker.extract.HTMLRegexExtractor;
 import com.example.checker.extract.IExtractor;
@@ -122,7 +121,7 @@ public class Checker {
 			// A TreeSet implements SortedSet and thus it automagically sorts
 			// the
 			// elements inserted.
-			final Set<Link> links = new TreeSet<Link>();
+			final Set<Link> links = new HashSet<Link>();
 
 			try {
 				// Each content type needs a specific Extractor. E.g. html uses

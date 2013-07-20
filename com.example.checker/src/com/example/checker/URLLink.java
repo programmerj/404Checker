@@ -11,7 +11,7 @@ import java.net.URL;
  * @author markus
  * 
  */
-public class URLLink extends Link implements Comparable<URLLink> {
+public class URLLink extends Link {
 
 	private URL url;
 
@@ -58,15 +58,5 @@ public class URLLink extends Link implements Comparable<URLLink> {
 	 */
 	public String toString() {
 		return url.toString();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 */
-	@Override
-	public int compareTo(URLLink o) {
-		return this.url.toString().compareTo(o.url.toString());
 	}
 }
