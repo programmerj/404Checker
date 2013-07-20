@@ -16,6 +16,7 @@ import java.util.TreeSet;
 
 import com.example.checker.extract.HTMLRegexExtractor;
 import com.example.checker.extract.IExtractor;
+import com.example.checker.extract.PlaintextRegexExtractor;
 import com.example.checker.extract.XMLExtractor;
 
 /**
@@ -47,6 +48,8 @@ public class Checker {
 		IExtractor extractor = new HTMLRegexExtractor();
 		extractors.put(extractor.getContentType(), extractor);
 		extractor = new XMLExtractor();
+		extractors.put(extractor.getContentType(), extractor);
+		extractor = new PlaintextRegexExtractor();
 		extractors.put(extractor.getContentType(), extractor);
 
 		this.urlComparator = new Comparator<URL>() {
