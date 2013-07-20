@@ -42,6 +42,12 @@ public class Checker {
 
 	private final Map<String, IExtractor> extractors;
 	private final Comparator<? super URL> urlComparator;
+	/**
+	 * A set of vertices/nodes in the cyclic graph (what the world wide web is)
+	 * to essentially remove cycles and create a directed Acyclic graph (DAG). A
+	 * DAG is much easier to traverse and thus handle.
+	 */
+	private final Set<URL> seen = new HashSet<URL>();
 
 	public Checker() {
 		extractors = new HashMap<String, IExtractor>();
@@ -105,6 +111,14 @@ public class Checker {
 			return;
 		}
 		for (URL url : urls) {
+			// Websites logically are equivalent to a _cyclic_ graph, thus a
+			// list of seen vertices is used to turn it into a DAG.
+			// Using the add op has the nice advantage that the set operation
+			// becomes atomic (see putIfAbsent).
+			if (!this.seen.add(url)) {
+				continue;
+			}
+
 			// links is used to store all extracted urls from the web page
 			// A TreeSet implements SortedSet and thus it automagically sorts
 			// the
