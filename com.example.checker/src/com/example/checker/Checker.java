@@ -26,7 +26,7 @@ import com.example.checker.extract.XMLExtractor;
  */
 public class Checker {
 
-	private static final int THRESHOLD = 2;
+	private int threshold = 2;
 
 	/**
 	 * @param args
@@ -61,6 +61,14 @@ public class Checker {
 		extractors.put(extractor.getContentType(), extractor);
 		extractor = new PlaintextRegexExtractor();
 		extractors.put(extractor.getContentType(), extractor);
+	}
+
+	/**
+	 * @param extractors2
+	 */
+	public Checker(Map<String, IExtractor> extractors2, int threshold) {
+		this.extractors = extractors2;
+		this.threshold = threshold;
 	}
 
 	/**
@@ -105,7 +113,7 @@ public class Checker {
 	}
 
 	private void check(final Set<Link> urls, Set<Link> dead, int level) {
-		if (level++ > THRESHOLD) {
+		if (level++ > threshold) {
 			return;
 		}
 		for (Link url : urls) {
@@ -159,5 +167,12 @@ public class Checker {
 			// recurse into
 			check(links, dead, level);
 		}
+	}
+
+	/**
+	 * @return
+	 */
+	public Set<Link> getSeen() {
+		return this.seen;
 	}
 }
