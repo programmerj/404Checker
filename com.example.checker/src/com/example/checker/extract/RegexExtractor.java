@@ -14,7 +14,7 @@ import java.util.Set;
 public class RegexExtractor implements IExtractor {
 
 	// package private to allow access to unit tests
-	static final String regex = "^(https?|ftp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
+	static final String regex = ".*((https?|ftp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]).*";
 
 	/*
 	 * (non-Javadoc)

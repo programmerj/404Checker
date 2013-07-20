@@ -13,8 +13,6 @@ import java.util.regex.Pattern;
 
 import org.junit.Test;
 
-import com.example.checker.extract.RegexExtractor;
-
 /**
  * @author markus
  * 
@@ -40,6 +38,22 @@ public class RegexExtractorTest {
 		for (String input : valid) {
 			new URL(input);
 		}
+
+		// really test the regex
+		for (String input : valid) {
+			assertTrue(String.format("Failed to match %s", input),
+					Pattern.matches(RegexExtractor.regex, input));
+		}
+	}
+
+	/**
+	 * This tests our regex to match also substrings compared to
+	 * {@link RegexExtractorTest#testValid()}
+	 */
+	@Test
+	public void testValidSubstring() throws MalformedURLException {
+		final List<String> valid = new ArrayList<String>();
+		valid.add("<link rel=pingback\" href=\"http://www.lemmster.de/blog/xmlrpc.php\" />");
 
 		// really test the regex
 		for (String input : valid) {
