@@ -204,8 +204,9 @@ public class Checker {
 				} else {
 					unknownContentType.add(contentType);
 				}
-			} catch (IOException e) {
-				// 404
+			} catch (IOException | IllegalArgumentException e) {
+				// 404 (if https connection fails when not connected to
+				// internet)
 				dead.add(url);
 			}
 			// Do not follow out-bound links from the page where we started on.
