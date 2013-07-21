@@ -28,7 +28,8 @@ import com.example.checker.extract.XMLExtractor;
  */
 public class Checker {
 
-	private int threshold = 2;
+	private int threshold = Integer.getInteger(getClass().getName()
+			+ ".threshold", 2);
 
 	/**
 	 * The depth the checker has reached up until now during dead link detection
