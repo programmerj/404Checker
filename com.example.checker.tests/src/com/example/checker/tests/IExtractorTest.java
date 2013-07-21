@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.example.checker.Link;
+import com.example.checker.URLLink;
 import com.example.checker.extract.HTMLExtractor;
 import com.example.checker.extract.IExtractor;
 import com.example.checker.extract.XMLExtractor;
@@ -43,8 +45,8 @@ public class IExtractorTest {
 
 	private final IExtractor extractor;
 	private final int expectedAmountOfLinks;
-	private URL url;
-	private Set<URL> links;
+	private Link url;
+	private Set<Link> links;
 
 	public IExtractorTest(IExtractor extractor, String url,
 			Integer expectedAmountOfLinks) {
@@ -53,7 +55,7 @@ public class IExtractorTest {
 
 		// Expect url conversion to _always_ succeed
 		try {
-			this.url = new URL(url);
+			this.url = new URLLink(new URL(url));
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -61,7 +63,7 @@ public class IExtractorTest {
 
 	@Before
 	public void setup() throws IOException {
-		links = new HashSet<URL>();
+		links = new HashSet<Link>();
 		extractor.extractLinks(url, links);
 	}
 

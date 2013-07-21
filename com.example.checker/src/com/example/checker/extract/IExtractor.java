@@ -4,8 +4,9 @@
 package com.example.checker.extract;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Set;
+
+import com.example.checker.Link;
 
 /**
  * @author markus
@@ -13,7 +14,7 @@ import java.util.Set;
  */
 public interface IExtractor {
 	/**
-	 * @param url
+	 * @param link
 	 *            The address of the (remote|local) web page to connect to
 	 * @param links
 	 *            All links embedded in the output of the content
@@ -22,7 +23,7 @@ public interface IExtractor {
 	 *             URL is only syntactically correct but invalid, the program
 	 *             (again) just terminates.
 	 */
-	void extractLinks(final URL url, final Set<URL> links)
+	void extractLinks(final Link link, final Set<Link> links)
 			throws IOException;
 
 	/**

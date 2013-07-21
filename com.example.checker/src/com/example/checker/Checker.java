@@ -6,8 +6,6 @@ package com.example.checker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.UnknownHostException;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -41,13 +39,12 @@ public class Checker {
 	}
 
 	private final Map<String, IExtractor> extractors;
-	private final Comparator<? super URL> urlComparator;
 	/**
 	 * A set of vertices/nodes in the cyclic graph (what the world wide web is)
 	 * to essentially remove cycles and create a directed Acyclic graph (DAG). A
 	 * DAG is much easier to traverse and thus handle.
 	 */
-	private final Set<URL> seen = new HashSet<URL>();
+	private final Set<Link> seen = new HashSet<Link>();
 	/**
 	 * The domain for which this dead link checker is responsible for. It causes
 	 * us to not follow outgoing links. E.g. no point in moving to a search
@@ -65,14 +62,6 @@ public class Checker {
 		extractors.put(extractor.getContentType(), extractor);
 		extractor = new PlaintextRegexExtractor();
 		extractors.put(extractor.getContentType(), extractor);
-
-		this.urlComparator = new Comparator<URL>() {
-
-			@Override
-			public int compare(URL o1, URL o2) {
-				return o1.toString().compareTo(o2.toString());
-			}
-		};
 	}
 
 	/**
@@ -91,34 +80,36 @@ public class Checker {
 			System.exit(1);
 		}
 
+		this.authority = url.getAuthority();
+
 		System.out.println(String.format("Going to start checker on url: %s",
 				url.toString()));
 
-		this.authority = url.getAuthority();
-
-		final Set<URL> urls = new HashSet<URL>();
-		urls.add(url);
-		Set<URL> dead = check(urls);
+		final Set<Link> urls = new HashSet<Link>();
+		urls.add(new URLLink(url));
+		Set<Link> dead = check(urls);
 
 		// Loop over the (now sorted) list of urls and print them to stdout
+		System.out.println(String.format("==== Scanned %d pages ====",
+				seen.size()));
 		System.out.println("==== Dead links ====");
-		for (URL string2 : dead) {
+		for (Link string2 : dead) {
 			System.out.println(string2);
 		}
 		System.out.println("==== Done ====");
 	}
 
-	private Set<URL> check(final Set<URL> urls) {
-		final Set<URL> dead = new HashSet<URL>();
+	Set<Link> check(final Set<Link> urls) {
+		final Set<Link> dead = new HashSet<Link>();
 		check(urls, dead, 0);
 		return dead;
 	}
 
-	private void check(final Set<URL> urls, Set<URL> dead, int level) {
+	private void check(final Set<Link> urls, Set<Link> dead, int level) {
 		if (level++ > THRESHOLD) {
 			return;
 		}
-		for (URL url : urls) {
+		for (Link url : urls) {
 			// Websites logically are equivalent to a _cyclic_ graph, thus a
 			// list of seen vertices is used to turn it into a DAG.
 			// Using the add op has the nice advantage that the set operation
@@ -131,19 +122,18 @@ public class Checker {
 			// A TreeSet implements SortedSet and thus it automagically sorts
 			// the
 			// elements inserted.
-			final Set<URL> links = new TreeSet<URL>(urlComparator);
+			final Set<Link> links = new TreeSet<Link>();
 
 			try {
 				// Each content type needs a specific Extractor. E.g. html uses
 				// a
 				// line based pattern matching looking for hrefs, whereas an xml
 				// file could navigate the xml structure to extract links
-				final String contentType = url.openConnection()
-						.getContentType();
+				final String contentType = url.getContentType();
 				if (contentType == null) {
 					// 404
 					dead.add(url);
-				} else if (!url.getAuthority().equals(authority)) {
+				} else if (!url.isSameAuthority(authority)) {
 					// (Partially redundant)
 					// if we get here we know _without_ parsing the web page
 					// that it is alive (because we managed to determine the
@@ -157,20 +147,14 @@ public class Checker {
 					System.out.println(String.format(
 							"No handle for %s content type", contentType));
 				}
-			} catch (UnknownHostException e) {
+			} catch (IOException e) {
 				// 404
 				dead.add(url);
-			} catch (IOException e) {
-				System.err.println(String
-						.format("Failed to connect to %s", url));
-				// FIXME exiting the the VM in case of an error does not make
-				// much sense with recursion anymore!
-				System.exit(1);
 			}
 			// Do not follow out-bound links from the page where we started on.
 			// E.g. don't check google for 404s. Still check if the link itself
 			// is correct
-			if (!url.getAuthority().equals(authority)) {
+			if (!url.isSameAuthority(authority)) {
 				continue;
 			}
 			// recurse into

@@ -10,6 +10,9 @@ import java.net.URL;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import com.example.checker.Link;
+import com.example.checker.URLLink;
+
 /**
  * @author markus
  * 
@@ -35,11 +38,11 @@ public class HTMLExtractor implements IExtractor {
 	 * @see com.example.checker.extract.IExtractor#extractLinks(java.net.URL,
 	 * java.util.Set)
 	 */
-	public void extractLinks(final URL url, final Set<URL> links)
+	public void extractLinks(final Link aLink, final Set<Link> links)
 			throws IOException {
 		int i = 0;
 		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				url.openStream()));
+				aLink.getInputStream()));
 		String line = "";
 		while ((line = reader.readLine()) != null) {
 			// Process each line to extract a URL out if:
@@ -61,7 +64,7 @@ public class HTMLExtractor implements IExtractor {
 				if (endIdx > -1) {
 					// cut out the substring that _is_ the url
 					final String link = substring.substring(0, endIdx).trim();
-					links.add(new URL(link));
+					links.add(new URLLink(new URL(link)));
 					LOGGER.fine(String.format(
 							"Processed %d th element %s and added to set", i++,
 							link));

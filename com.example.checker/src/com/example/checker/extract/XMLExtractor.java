@@ -3,9 +3,12 @@
  */
 package com.example.checker.extract;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URL;
+import java.io.InputStreamReader;
 import java.util.Set;
+
+import com.example.checker.Link;
 
 /**
  * @author markus
@@ -20,9 +23,23 @@ public class XMLExtractor implements IExtractor {
 	 * java.util.Set)
 	 */
 	@Override
-	public void extractLinks(URL url, Set<URL> links) throws IOException {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+	public void extractLinks(Link link, Set<Link> links) throws IOException {
+		// Read the full xml file into memory
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+				link.getInputStream()));
+		extractLinks(reader, links);
+	}
+
+	public void extractLinks(BufferedReader reader, Set<Link> links)
+			throws IOException {
+		StringBuffer buf = new StringBuffer();
+		String line = "";
+		while ((line = reader.readLine()) != null) {
+			buf.append(line);
+		}
+		reader.close();
+
+		// TODO extract links from xml file
 	}
 
 	/*

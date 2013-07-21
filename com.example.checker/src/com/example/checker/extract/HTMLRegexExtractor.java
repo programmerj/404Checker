@@ -10,6 +10,9 @@ import java.net.URL;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import com.example.checker.Link;
+import com.example.checker.URLLink;
+
 /**
  * @author markus
  * 
@@ -23,15 +26,15 @@ public class HTMLRegexExtractor extends RegexExtractor {
 	 * java.util.Set)
 	 */
 	@Override
-	public void extractLinks(URL url, Set<URL> links) throws IOException {
+	public void extractLinks(Link link, Set<Link> links) throws IOException {
 		final BufferedReader reader = new BufferedReader(new InputStreamReader(
-				url.openStream()));
+				link.getInputStream()));
 		String line = "";
 		while ((line = reader.readLine()) != null) {
 			final Matcher match = this.matcher.matcher(line);
 			if (match.matches()) {
 				// second group is the match, first is the full line
-				links.add(new URL(match.group(1)));
+				links.add(new URLLink(new URL(match.group(1))));
 			}
 		}
 		reader.close();
