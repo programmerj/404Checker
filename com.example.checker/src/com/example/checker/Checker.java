@@ -48,6 +48,12 @@ public class Checker {
 	 * DAG is much easier to traverse and thus handle.
 	 */
 	private final Set<URL> seen = new HashSet<URL>();
+	/**
+	 * The domain for which this dead link checker is responsible for. It causes
+	 * us to not follow outgoing links. E.g. no point in moving to a search
+	 * result page.
+	 */
+	private String authority;
 
 	public Checker() {
 		extractors = new HashMap<String, IExtractor>();
@@ -87,6 +93,8 @@ public class Checker {
 
 		System.out.println(String.format("Going to start checker on url: %s",
 				url.toString()));
+
+		this.authority = url.getAuthority();
 
 		final Set<URL> urls = new HashSet<URL>();
 		urls.add(url);
@@ -135,6 +143,13 @@ public class Checker {
 				if (contentType == null) {
 					// 404
 					dead.add(url);
+				} else if (!url.getAuthority().equals(authority)) {
+					// (Partially redundant)
+					// if we get here we know _without_ parsing the web page
+					// that it is alive (because we managed to determine the
+					// content type) and thus can skip it (no need to extract
+					// its page links)
+					continue;
 				} else if (extractors.containsKey(contentType)) {
 					IExtractor iExtractor = extractors.get(contentType);
 					iExtractor.extractLinks(url, links);
@@ -152,7 +167,12 @@ public class Checker {
 				// much sense with recursion anymore!
 				System.exit(1);
 			}
-
+			// Do not follow out-bound links from the page where we started on.
+			// E.g. don't check google for 404s. Still check if the link itself
+			// is correct
+			if (!url.getAuthority().equals(authority)) {
+				continue;
+			}
 			// recurse into
 			check(links, dead, level);
 		}
