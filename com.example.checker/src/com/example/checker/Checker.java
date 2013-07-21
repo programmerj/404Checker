@@ -29,11 +29,17 @@ public class Checker {
 	private int threshold = 2;
 
 	/**
+	 * The depth the checker has reached up until now during dead link detection
+	 */
+	private int maxDepth = 0;
+
+	/**
 	 * @param args
 	 *            The first element of the string parameters is passed on and
 	 *            subsequently treated as a url.
+	 * @throws InterruptedException
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InterruptedException {
 		new Checker().check(args[0]);
 	}
 
@@ -44,6 +50,10 @@ public class Checker {
 	 * DAG is much easier to traverse and thus handle.
 	 */
 	private final Set<Link> seen = new HashSet<Link>();
+	/**
+	 * Set of dead links found during link checking
+	 */
+	private final Set<Link> dead = new HashSet<Link>();
 	/**
 	 * The domain for which this dead link checker is responsible for. It causes
 	 * us to not follow outgoing links. E.g. no point in moving to a search
@@ -74,8 +84,9 @@ public class Checker {
 	/**
 	 * @param string
 	 *            The base url where to start from
+	 * @throws InterruptedException
 	 */
-	private void check(final String string) {
+	private void check(final String string) throws InterruptedException {
 		// Try to convert the String parameter into a URL. This might fail and
 		// thus we have to handle the MUE. In case of said exception we notify
 		// the user and exit our little program right away.
@@ -94,7 +105,25 @@ public class Checker {
 
 		final Set<Link> urls = new HashSet<Link>();
 		urls.add(new URLLink(url));
-		Set<Link> dead = check(urls);
+
+		// Create a worker thread that forks of from the main thread to do link
+		// detection. The main thread will move on to the next loop and report
+		// progress every five seconds.
+		final Thread worker = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				check(urls);
+			}
+		}, "Link Checker Worker Thread");
+		worker.start();
+
+		while (worker.isAlive()) {
+			System.out
+					.println(String
+							.format("Processed %d pages at depth %d, found %d dead links so far",
+									seen.size(), maxDepth, dead.size()));
+			Thread.sleep(5000);
+		}
 
 		// Loop over the (now sorted) list of urls and print them to stdout
 		System.out.println(String.format("==== Scanned %d pages ====",
@@ -107,12 +136,15 @@ public class Checker {
 	}
 
 	Set<Link> check(final Set<Link> urls) {
-		final Set<Link> dead = new HashSet<Link>();
 		check(urls, dead, 0);
 		return dead;
 	}
 
 	private void check(final Set<Link> urls, Set<Link> dead, int level) {
+		// Example of ternary operator (syntactical sugar for if/else)
+		// Logically it increases maxDepth if the current level is deeper
+		maxDepth = (maxDepth < level) ? level : maxDepth;
+
 		if (level++ > threshold) {
 			return;
 		}
