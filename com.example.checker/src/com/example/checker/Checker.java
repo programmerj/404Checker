@@ -6,10 +6,12 @@ package com.example.checker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.example.checker.extract.HTMLRegexExtractor;
 import com.example.checker.extract.IExtractor;
@@ -53,7 +55,18 @@ public class Checker {
 	/**
 	 * Set of dead links found during link checking
 	 */
-	private final Set<Link> dead = new HashSet<Link>();
+	private final Set<Link> dead = new TreeSet<Link>(new Comparator<Link>() {
+
+		@Override
+		public int compare(Link o1, Link o2) {
+			return o2.toString().compareTo(o1.toString());
+		}
+	});
+	/**
+	 * Content types discovered by the dead link detection for which there is no
+	 * IExtractor registered.
+	 */
+	private final Set<String> unknownContentType = new TreeSet<String>();
 	/**
 	 * The domain for which this dead link checker is responsible for. It causes
 	 * us to not follow outgoing links. E.g. no point in moving to a search
@@ -128,6 +141,11 @@ public class Checker {
 		// Loop over the (now sorted) list of urls and print them to stdout
 		System.out.println(String.format("==== Scanned %d pages ====",
 				seen.size()));
+		for (String contentType : unknownContentType) {
+			System.out.println(String
+					.format("No IExtractor registered for %s content type",
+							contentType));
+		}
 		System.out.println("==== Dead links ====");
 		for (Link string2 : dead) {
 			System.out.println(string2);
@@ -183,8 +201,7 @@ public class Checker {
 					IExtractor iExtractor = extractors.get(contentType);
 					iExtractor.extractLinks(url, links);
 				} else {
-					System.out.println(String.format(
-							"No handle for %s content type", contentType));
+					unknownContentType.add(contentType);
 				}
 			} catch (IOException e) {
 				// 404
