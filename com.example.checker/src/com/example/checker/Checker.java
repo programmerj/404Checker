@@ -6,9 +6,11 @@ package com.example.checker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -235,7 +237,6 @@ public class Checker {
 					iExtractor.extractLinks(url, links);
 				} else {
 					unknownContentType.add(contentType);
-					continue;
 				}
 			} catch (IOException | IllegalArgumentException e) {
 				// 404 (if https connection fails when not connected to
@@ -250,20 +251,29 @@ public class Checker {
 			}
 			// recurse into
 
-			// If threads are available in the pool, use one to recurse into the
-			// list. If no thread is available, use the current one.
-			// This reassembles depth-first search as we don't half the list
-			// first and spawn two new Runnables on the same level.
-			if (threadPool.getActiveCount() < numThreads) {
-				final int fLevel = level;
-				final Future<Set<Link>> submit = threadPool
-						.submit(new Callable<Set<Link>>() {
-							@Override
-							public Set<Link> call() throws Exception {
-								return check(links, dead, fLevel);
-							}
-						});
-				dead.addAll(submit.get());
+			// If two threads are available in the pool, use one to recurse into
+			// the left list and the other for the right list. If no threads are
+			// available, use the current one. This reassembles a mix of breadth
+			// and depth-first search.
+			int activeCount = threadPool.getActiveCount();
+			if (links.size() > 1 && activeCount <= (numThreads - 2)) {
+				// Half links set into two equally sized sets.
+				final List<Link> list = new ArrayList<Link>();
+				list.addAll(links);
+
+				final int toIndex = list.size() / 2;
+				final List<Link> left = list.subList(0, toIndex);
+				final List<Link> right = list.subList(toIndex, list.size());
+
+				assert links.size() == left.size() + right.size();
+
+				final Future<Set<Link>> leftResult = threadPool
+						.submit(new MyRunnable(left, dead, level));
+				final Future<Set<Link>> rightResult = threadPool
+						.submit(new MyRunnable(right, dead, level));
+
+				dead.addAll(leftResult.get());
+				dead.addAll(rightResult.get());
 			} else {
 				dead.addAll(check(links, dead, level));
 			}
@@ -276,5 +286,29 @@ public class Checker {
 	 */
 	public Set<Link> getSeen() {
 		return this.seen;
+	}
+
+	private class MyRunnable implements Callable<Set<Link>> {
+
+		private final List<Link> list;
+		private final Set<Link> dead;
+		private final int level;
+
+		public MyRunnable(List<Link> aList, Set<Link> dead, int level) {
+			this.list = aList;
+			this.dead = dead;
+			this.level = level;
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.util.concurrent.Callable#call()
+		 */
+		@Override
+		public Set<Link> call() throws Exception {
+			final Set<Link> s = new HashSet<Link>(list);
+			return Checker.this.check(s, dead, level);
+		}
 	}
 }
