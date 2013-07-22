@@ -162,10 +162,6 @@ public class Checker {
 
 		final Set<Link> dead = result.get();
 
-		// Need to shut down the thread pool explicitly. Otherwise the VM never
-		// terminates and leaves the threads open.
-		threadPool.shutdown();
-
 		/* final reportig below here */
 
 		// Loop over the (now sorted) list of urls and print them to stdout
@@ -185,10 +181,18 @@ public class Checker {
 
 	Set<Link> check(final Set<Link> urls) throws InterruptedException,
 			ExecutionException {
-		return check(urls,
-				Collections
-						.newSetFromMap(new ConcurrentHashMap<Link, Boolean>()),
-				0);
+		try {
+			return check(
+					urls,
+					Collections
+							.newSetFromMap(new ConcurrentHashMap<Link, Boolean>()),
+					0);
+		} finally {
+			// Need to shut down the thread pool explicitly. Otherwise the VM
+			// never
+			// terminates and leaves the threads open.
+			threadPool.shutdown();
+		}
 	}
 
 	private Set<Link> check(final Set<Link> urls, final Set<Link> dead,
