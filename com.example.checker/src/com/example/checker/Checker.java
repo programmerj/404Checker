@@ -6,15 +6,18 @@ package com.example.checker;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.example.checker.extract.HTMLRegexExtractor;
 import com.example.checker.extract.IExtractor;
@@ -31,7 +34,7 @@ import com.example.checker.extract.XMLExtractor;
  */
 public class Checker {
 
-	private static final int NUM_THREADS = 4;
+	private final int numThreads;
 
 	private int threshold = Integer.getInteger(getClass().getName()
 			+ ".threshold", 2);
@@ -49,8 +52,10 @@ public class Checker {
 	 *            The first element of the string parameters is passed on and
 	 *            subsequently treated as a url.
 	 * @throws InterruptedException
+	 * @throws ExecutionException
 	 */
-	public static void main(String[] args) throws InterruptedException {
+	public static void main(String[] args) throws InterruptedException,
+			ExecutionException {
 		new Checker().check(args[0]);
 	}
 
@@ -60,17 +65,8 @@ public class Checker {
 	 * to essentially remove cycles and create a directed Acyclic graph (DAG). A
 	 * DAG is much easier to traverse and thus handle.
 	 */
-	private final Set<Link> seen = new HashSet<Link>();
-	/**
-	 * Set of dead links found during link checking
-	 */
-	private final Set<Link> dead = new TreeSet<Link>(new Comparator<Link>() {
-
-		@Override
-		public int compare(Link o1, Link o2) {
-			return o2.toString().compareTo(o1.toString());
-		}
-	});
+	private final Set<Link> seen = Collections
+			.newSetFromMap(new ConcurrentHashMap<Link, Boolean>());
 	/**
 	 * Content types discovered by the dead link detection for which there is no
 	 * IExtractor registered.
@@ -83,18 +79,13 @@ public class Checker {
 	 */
 	private String authority;
 
-	private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors
-			.newFixedThreadPool(NUM_THREADS);
-
-	/**
-	 * Count work (links) not yet explored. Initialized with 1 to prevent main
-	 * thread from exiting immediately after spawning the first worker thread
-	 * (before it even had a chance to extract the first set of links) and the
-	 * final decrement to 0 in {@link Checker#check(Set)}
-	 */
-	private AtomicInteger undone = new AtomicInteger(1);
+	private final ThreadPoolExecutor threadPool;
 
 	public Checker() {
+		this.numThreads = 1;
+		this.threadPool = (ThreadPoolExecutor) Executors
+				.newFixedThreadPool(numThreads);
+
 		extractors = new HashMap<String, IExtractor>();
 
 		// Add built-in extractors
@@ -109,17 +100,23 @@ public class Checker {
 	/**
 	 * @param extractors2
 	 */
-	public Checker(Map<String, IExtractor> extractors2, int threshold) {
+	public Checker(Map<String, IExtractor> extractors2, int threshold,
+			int numThreads) {
 		this.extractors = extractors2;
 		this.threshold = threshold;
+		this.numThreads = numThreads;
+		this.threadPool = (ThreadPoolExecutor) Executors
+				.newFixedThreadPool(numThreads);
 	}
 
 	/**
 	 * @param string
 	 *            The base url where to start from
 	 * @throws InterruptedException
+	 * @throws ExecutionException
 	 */
-	private void check(final String string) throws InterruptedException {
+	private void check(final String string) throws InterruptedException,
+			ExecutionException {
 		// Try to convert the String parameter into a URL. This might fail and
 		// thus we have to handle the MUE. In case of said exception we notify
 		// the user and exit our little program right away.
@@ -144,21 +141,24 @@ public class Checker {
 		// Create a worker thread that forks of from the main thread to do link
 		// detection. The main thread will move on to the next loop and report
 		// progress every five seconds.
-		threadPool.execute(new Runnable() {
-			@Override
-			public void run() {
-				check(urls);
-			}
-		});
+		final Future<Set<Link>> result = threadPool
+				.submit(new Callable<Set<Link>>() {
+					@Override
+					public Set<Link> call() throws Exception {
+						return check(urls);
+					}
+				});
 
 		// Check if any work (links) are left undone.
-		while (undone.get() > 0) {
+		while (!result.isDone()) {
 			System.out
 					.println(String
 							.format("Processed %d pages at depth %d, found %d dead links so far",
-									seen.size(), maxDepth, dead.size()));
+									seen.size(), maxDepth));
 			Thread.sleep(5000);
 		}
+
+		final Set<Link> dead = result.get();
 
 		// Need to shut down the thread pool explicitly. Otherwise the VM never
 		// terminates and leaves the threads open.
@@ -181,20 +181,22 @@ public class Checker {
 		System.out.println("==== Done ====");
 	}
 
-	Set<Link> check(final Set<Link> urls) {
-		check(urls, dead, 0);
-		undone.decrementAndGet();
-		return dead;
+	Set<Link> check(final Set<Link> urls) throws InterruptedException,
+			ExecutionException {
+		return check(urls,
+				Collections
+						.newSetFromMap(new ConcurrentHashMap<Link, Boolean>()),
+				0);
 	}
 
-	private void check(final Set<Link> urls, final Set<Link> dead, int level) {
+	private Set<Link> check(final Set<Link> urls, final Set<Link> dead,
+			int level) throws InterruptedException, ExecutionException {
 		// Example of ternary operator (syntactical sugar for if/else)
 		// Logically it increases maxDepth if the current level is deeper
 		maxDepth = (maxDepth < level) ? level : maxDepth;
 
 		if (level++ > threshold) {
-			undone.addAndGet(urls.size() * -1);
-			return;
+			return dead;
 		}
 		for (Link url : urls) {
 
@@ -204,59 +206,47 @@ public class Checker {
 			// elements inserted.
 			final Set<Link> links = new HashSet<Link>();
 
+			// Websites logically are equivalent to a _cyclic_ graph, thus a
+			// list of seen vertices is used to turn it into a DAG.
+			// Using the add op has the nice advantage that the set
+			// operation
+			// becomes atomic (see putIfAbsent).
+			if (!this.seen.add(url)) {
+				continue;
+			}
 			try {
-				// Websites logically are equivalent to a _cyclic_ graph, thus a
-				// list of seen vertices is used to turn it into a DAG.
-				// Using the add op has the nice advantage that the set operation
-				// becomes atomic (see putIfAbsent).
-				if (!this.seen.add(url)) {
-					continue;
-				}
-				try {
-					// Each content type needs a specific Extractor. E.g. html uses
-					// a
-					// line based pattern matching looking for hrefs, whereas an xml
-					// file could navigate the xml structure to extract links
-					final String contentType = url.getContentType();
-					if (contentType == null) {
-						// 404
-						dead.add(url);
-					} else if (!url.isSameAuthority(authority)) {
-						// (Partially redundant)
-						// if we get here we know _without_ parsing the web page
-						// that it is alive (because we managed to determine the
-						// content type) and thus can skip it (no need to extract
-						// its page links)
-						continue;
-					} else if (extractors.containsKey(contentType)) {
-						IExtractor iExtractor = extractors.get(contentType);
-						iExtractor.extractLinks(url, links);
-						// Here is a slight chance of early termination
-						// when
-						// the main thread checks undone immediately
-						// extractLinks(..) returns but before undone is
-						// incremented. This is accounted for by 
-						// decrementing undone in try catch
-						undone.addAndGet(links.size());
-					} else {
-						unknownContentType.add(contentType);
-						continue;
-					}
-				} catch (IOException | IllegalArgumentException e) {
-					// 404 (if https connection fails when not connected to
-					// internet)
+				// Each content type needs a specific Extractor. E.g. html uses
+				// a
+				// line based pattern matching looking for hrefs, whereas an xml
+				// file could navigate the xml structure to extract links
+				final String contentType = url.getContentType();
+				if (contentType == null) {
+					// 404
 					dead.add(url);
-				}
-				// Do not follow out-bound links from the page where we started on.
-				// E.g. don't check google for 404s. Still check if the link itself
-				// is correct
-				if (!url.isSameAuthority(authority)) {
+				} else if (!url.isSameAuthority(authority)) {
+					// (Partially redundant)
+					// if we get here we know _without_ parsing the web page
+					// that it is alive (because we managed to determine the
+					// content type) and thus can skip it (no need to extract
+					// its page links)
+					continue;
+				} else if (extractors.containsKey(contentType)) {
+					IExtractor iExtractor = extractors.get(contentType);
+					iExtractor.extractLinks(url, links);
+				} else {
+					unknownContentType.add(contentType);
 					continue;
 				}
-			} finally {
-				// Decrement has to happen after new work have been added to the
-				// work list. Otherwise we terminate too early.
-				undone.decrementAndGet();
+			} catch (IOException | IllegalArgumentException e) {
+				// 404 (if https connection fails when not connected to
+				// internet)
+				dead.add(url);
+			}
+			// Do not follow out-bound links from the page where we started on.
+			// E.g. don't check google for 404s. Still check if the link itself
+			// is correct
+			if (!url.isSameAuthority(authority)) {
+				continue;
 			}
 			// recurse into
 
@@ -264,18 +254,21 @@ public class Checker {
 			// list. If no thread is available, use the current one.
 			// This reassembles depth-first search as we don't half the list
 			// first and spawn two new Runnables on the same level.
-			if (threadPool.getActiveCount() < NUM_THREADS) {
-				final int foo = level;
-				threadPool.execute(new Runnable() {
-					@Override
-					public void run() {
-						check(links, dead, foo);
-					}
-				});
+			if (threadPool.getActiveCount() < numThreads) {
+				final int fLevel = level;
+				final Future<Set<Link>> submit = threadPool
+						.submit(new Callable<Set<Link>>() {
+							@Override
+							public Set<Link> call() throws Exception {
+								return check(links, dead, fLevel);
+							}
+						});
+				dead.addAll(submit.get());
 			} else {
-				check(links, dead, level);
+				dead.addAll(check(links, dead, level));
 			}
 		}
+		return dead;
 	}
 
 	/**

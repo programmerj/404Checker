@@ -44,30 +44,54 @@ public class MockedCheckerTest {
 	 */
 	private final int depth;
 
+	/**
+	 * Level of concurrency in tests
+	 */
+	private final int numThreads;
+
+	private final int totalNodes;
+
 	@Parameters
 	public static Collection<Object[]> data() {
 		Collection<Object[]> col = new ArrayList<Object[]>();
-		col.add(new Object[] { 2, 1 });
-		col.add(new Object[] { 2, 2 });
-		col.add(new Object[] { 2, 4 });
-		col.add(new Object[] { 2, 8 });
-		col.add(new Object[] { 2, 16 });
-		col.add(new Object[] { 2, 32 });
+		col.add(new Object[] { 2, 1, 1 });
+		col.add(new Object[] { 2, 2, 1 });
+		col.add(new Object[] { 2, 4, 1 });
+		col.add(new Object[] { 2, 8, 1 });
+		col.add(new Object[] { 2, 16, 1 });
 
-		col.add(new Object[] { 2, 1 });
-		col.add(new Object[] { 4, 2 });
-		col.add(new Object[] { 8, 4 });
-		col.add(new Object[] { 16, 8 });
+		col.add(new Object[] { 2, 1, 1 });
+		col.add(new Object[] { 4, 2, 1 });
+		col.add(new Object[] { 8, 4, 1 });
+		col.add(new Object[] { 16, 8, 1 });
+
+		col.add(new Object[] { 2, 1, 8 });
+		col.add(new Object[] { 2, 2, 8 });
+		col.add(new Object[] { 2, 4, 8 });
+		col.add(new Object[] { 2, 8, 8 });
+		col.add(new Object[] { 2, 16, 8 });
+
+		col.add(new Object[] { 2, 1, 8 });
+		col.add(new Object[] { 4, 2, 8 });
+		col.add(new Object[] { 8, 4, 8 });
+		col.add(new Object[] { 16, 8, 8 });
 
 		return col;
 	}
 
-	public MockedCheckerTest(int n, int depth) {
+	public MockedCheckerTest(int n, int depth, int numThreads) {
 		this.n = n;
 		this.depth = depth;
+		this.numThreads = numThreads;
 
-		System.out.println(String.format(
-				"Running test with branching %d, depth %d", n, depth));
+		// nodes in tree: (n^(depth + 1 + 1) - 1)/(n-1)
+		double pow = Math.pow(n * 1.0d, (depth + 2) * 1.0d);
+		this.totalNodes = (int) ((pow - 1) / (n - 1));
+
+		System.out
+				.println(String
+						.format("Running test with branching %d, depth %d (total nodes: %,d) and num thread %d",
+								n, depth, totalNodes, numThreads));
 	}
 
 	@Test
@@ -110,14 +134,10 @@ public class MockedCheckerTest {
 		final Set<Link> links = new HashSet<Link>();
 		links.add(root);
 
-		final Checker checker = new Checker(extractors, depth + 2);
+		final Checker checker = new Checker(extractors, depth + 2, numThreads);
 		final Set<Link> check = checker.check(links);
 
-		// nodes in tree: (n^(depth + 1 + 1) - 1)/(n-1)
-		double pow = Math.pow(n * 1.0d, (depth + 2) * 1.0d);
-		int expected = (int) ((pow - 1) / (n - 1));
-
-		Assert.assertEquals(expected, checker.getSeen().size());
+		Assert.assertEquals(totalNodes, checker.getSeen().size());
 		Assert.assertTrue(check.size() == 0);
 	}
 }
