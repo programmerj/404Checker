@@ -67,8 +67,8 @@ public class Checker {
 	 * to essentially remove cycles and create a directed Acyclic graph (DAG). A
 	 * DAG is much easier to traverse and thus handle.
 	 */
-	private final Set<Link> seen = Collections
-			.newSetFromMap(new ConcurrentHashMap<Link, Boolean>());
+	private final Set<Integer> seen = Collections
+			.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 	/**
 	 * Content types discovered by the dead link detection for which there is no
 	 * IExtractor registered.
@@ -217,7 +217,7 @@ public class Checker {
 			// Using the add op has the nice advantage that the set
 			// operation
 			// becomes atomic (see putIfAbsent).
-			if (!this.seen.add(url)) {
+			if (!this.seen.add(url.hashCode())) {
 				continue;
 			}
 			try {
@@ -288,7 +288,7 @@ public class Checker {
 	/**
 	 * @return
 	 */
-	public Set<Link> getSeen() {
+	public Set<Integer> getSeen() {
 		return this.seen;
 	}
 
