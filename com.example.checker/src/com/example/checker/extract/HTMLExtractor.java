@@ -38,6 +38,7 @@ public class HTMLExtractor implements IExtractor {
 	 * @see com.example.checker.extract.IExtractor#extractLinks(java.net.URL,
 	 * java.util.Set)
 	 */
+	@Override
 	public void extractLinks(final Link aLink, final Set<Link> links)
 			throws IOException {
 		int i = 0;

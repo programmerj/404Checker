@@ -144,12 +144,7 @@ public class Checker {
 		// detection. The main thread will move on to the next loop and report
 		// progress every five seconds.
 		final Future<Set<Link>> result = threadPool
-				.submit(new Callable<Set<Link>>() {
-					@Override
-					public Set<Link> call() throws Exception {
-						return check(urls);
-					}
-				});
+				.submit(() -> check(urls));
 
 		// Check if any work (links) are left undone.
 		while (!result.isDone()) {

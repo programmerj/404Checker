@@ -21,7 +21,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import com.example.checker.extract.HTMLExtractor;
@@ -105,24 +104,22 @@ public class MockedCheckerTest {
 		Mockito.when(extractor.getContentType()).thenReturn(
 				MockitoLink.CONTENT_TYPE);
 
-		final Answer<Void> answer = new Answer<Void>() {
-			public Void answer(InvocationOnMock invocation) {
-				final MockitoLink parentLink = (MockitoLink) invocation
-						.getArguments()[0];
-				final Set<Link> links = (Set<Link>) invocation.getArguments()[1];
-				int height = parentLink.getHeight();
-				if (height > depth) {
-					// Create loop to first link
-					links.add(root);
-				} else {
-					for (int i = 0; i < n; i++) {
-						links.add(new MockitoLink(parentLink.getHeight() + 1,
-								parentLink.getId() + ":H: " + (height + 1)
-										+ " id: " + i));
-					}
+		final Answer<Void> answer = invocation -> {
+			final MockitoLink parentLink = (MockitoLink) invocation
+					.getArguments()[0];
+			final Set<Link> links = (Set<Link>) invocation.getArguments()[1];
+			int height = parentLink.getHeight();
+			if (height > depth) {
+				// Create loop to first link
+				links.add(root);
+			} else {
+				for (int i = 0; i < n; i++) {
+					links.add(new MockitoLink(parentLink.getHeight() + 1,
+							parentLink.getId() + ":H: " + (height + 1)
+									+ " id: " + i));
 				}
-				return null;
 			}
+			return null;
 		};
 
 		doAnswer(answer).when(extractor).extractLinks(Matchers.any(Link.class),

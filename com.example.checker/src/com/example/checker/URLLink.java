@@ -19,14 +19,17 @@ public class URLLink extends Link {
 		this.url = url;
 	}
 
+	@Override
 	public InputStream getInputStream() throws IOException {
 		return this.url.openStream();
 	}
 
+	@Override
 	public String getContentType() throws IOException {
 		return this.url.openConnection().getContentType();
 	}
 
+	@Override
 	public boolean isSameAuthority(String authority) {
 		return this.url.getAuthority().equals(authority);
 	}
@@ -36,6 +39,7 @@ public class URLLink extends Link {
 	 * @return
 	 * @see java.net.URL#equals(java.lang.Object)
 	 */
+	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof URLLink) {
 			URLLink l = (URLLink) obj;
@@ -48,6 +52,7 @@ public class URLLink extends Link {
 	 * @return
 	 * @see java.net.URL#hashCode()
 	 */
+	@Override
 	public int hashCode() {
 		return url.toString().hashCode();
 	}
@@ -56,6 +61,7 @@ public class URLLink extends Link {
 	 * @return
 	 * @see java.net.URL#toString()
 	 */
+	@Override
 	public String toString() {
 		return url.toString();
 	}
